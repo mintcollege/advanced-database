@@ -1,0 +1,14 @@
+services:
+  aaadb:
+    image: bitnami/postgresql:16
+    container_name: aaadb
+    restart: no
+    tty: true
+    ports:
+      - "5432:5432"
+    volumes:
+      - aaadb:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=pass123
+volumes:
+  aaadb:
