@@ -22,7 +22,7 @@ if config.config_file_name is not None:
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-from models import Pokemon, Trainer, SteamGame
+from models import Pokemon, Trainer, Game   # noqa
 # from models import Trainer
 # from models import SteamGame
 target_metadata = SQLModel.metadata
