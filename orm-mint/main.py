@@ -1,14 +1,18 @@
 from typing import Annotated
 from fastapi import FastAPI, Depends, Body
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-from models.Pokemon import Pokemon
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+from sqlmodel import select
+from sqlmodel.ext.asyncio.session import AsyncSession
 from pydantic import BaseModel
+from models.Pokemon import Pokemon
 from icecream import ic
+from models.SteamGame import SteamGame, Genre
 
 
 # Setup the use of your database
 DATABASE_URL = 'postgresql+asyncpg://postgres:pass123@localhost:5432/postgres'
 async_engine = create_async_engine(DATABASE_URL, echo=False, future=True)
+
 
 async def get_session() -> AsyncSession:
     """
@@ -44,8 +48,8 @@ async def create(data: CreatePokemon, session: Annotated[AsyncSession, Depends(g
     pokemon = Pokemon(name=data.name, type=data.type, health=data.health, weakness=data.weakness)
     ic(pokemon)
     session.add(pokemon)
-    await session.commit()      # Saves pikachu to the database
-    await session.refresh(pokemon) # Updates pikachu with the db id
+    await session.commit()  # Saves pikachu to the database
+    await session.refresh(pokemon)  # Updates pikachu with the db id
     ic(pokemon)
     return pokemon
 
@@ -59,3 +63,16 @@ async def edit_pokemon(id_: int, data: Annotated[dict, Body()],
     session.add(pokemon)
     await session.commit()
     return True
+
+
+@app.get('/foo')
+async def foo(session: Annotated[AsyncSession, Depends(get_session)]):
+    stmt = select(SteamGame).where(SteamGame.id == 1)  # noqa
+    exec_ = await session.exec(stmt)    # noqa
+    game = exec_.one_or_none()
+    ic(game, game.genres)
+
+    genre = await session.get(Genre, 1)
+    ic(genre, genre.game)
+
+    return game
