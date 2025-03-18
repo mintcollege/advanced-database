@@ -48,9 +48,9 @@ else:
 
 
 
-class MyClass() {
-    
-}
-
-class MyClass:
-    pass
+# class MyClass() {
+#
+# }
+#
+# class MyClass:
+#     pass
