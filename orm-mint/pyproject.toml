@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "orm-mint"
+version = "0.1.0"
+description = ""
+authors = ["enchance <enchance@gmail.com>"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.12"
+sqlmodel = "^0.0.24"
+asyncpg = "^0.30.0"
+icecream = "^2.1.4"
+fastapi = {extras = ["standard"], version = "^0.115.11"}
+alembic = "^1.15.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
