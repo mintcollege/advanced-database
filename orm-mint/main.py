@@ -1,12 +1,14 @@
 from typing import Annotated
 from fastapi import FastAPI, Depends, Body
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlmodel import select
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from sqlmodel.ext.asyncio.session import AsyncSession
 from pydantic import BaseModel
+from models.Pokemon import Pokemon
 from icecream import ic
 
-from models.Pokemon import Pokemon
-from models.dnd import Character, Weapon
+from models.Game import Game, Genre, Tag, GameTags
+from models.library import Book, Author
 
 
 # Setup the use of your database
@@ -39,7 +41,7 @@ class CreatePokemon(BaseModel):
     weakness: str
 
 
-@app.post('/create/pokemon')
+@app.post('/create')
 async def create(data: CreatePokemon, session: Annotated[AsyncSession, Depends(get_session)]):
     """
     Create a new Pokemon
@@ -54,7 +56,7 @@ async def create(data: CreatePokemon, session: Annotated[AsyncSession, Depends(g
     return pokemon
 
 
-@app.post('/edit/pokemon/{id_}')
+@app.post('/edit/{id_}')
 async def edit_pokemon(id_: int, data: Annotated[dict, Body()],
                        session: Annotated[AsyncSession, Depends(get_session)]):
     pokemon = await session.get(Pokemon, id_)
@@ -65,72 +67,128 @@ async def edit_pokemon(id_: int, data: Annotated[dict, Body()],
     return True
 
 
-@app.post('/create/character')
-async def create_char(session: Annotated[AsyncSession, Depends(get_session)]):
-    # john = Character(name='john', race='white', health=1000)
-    # jake = Character(name='jake', race='white', health=10)
-    nic = Character(name='nic', race='ogre', health=100)
-    # session.add(john)
-    # session.add(jake)
-    session.add(nic)
+@app.post('/populate')
+async def foo(session: Annotated[AsyncSession, Depends(get_session)]):
+    # Tags
+    tag1 = Tag(tag='apple')
+    tag2 = Tag(tag='orange')
+    tag3 = Tag(tag='banana')
+    game = Game(name='mygame', tags=[tag1, tag2])
+    session.add(tag1)
+    session.add(tag2)
+    session.add(tag3)
+    session.add(game)
     await session.commit()
-    # await session.refresh(john)
-    # await session.refresh(jake)
-    await session.refresh(nic)
+    await session.refresh(tag1)
+    await session.refresh(tag2)
+    await session.refresh(tag3)
+    await session.refresh(game)
 
-    # staff = Weapon(name='staff', type='mage', is_equiped=True, character_id=john.id)
-    # session.add(staff)
-    # # session.add(axe)
+    genre1 = Genre(name='rpg', game=game)
+    genre2 = Genre(name='isometric', game=game)
+    session.add(genre1)
+    session.add(genre2)
+    await session.commit()
+    await session.refresh(genre1)
+    await session.refresh(genre2)
+
+    return True
+
+
+@app.get('/foo')
+async def foo(session: Annotated[AsyncSession, Depends(get_session)]):
+    # Game
+    stmt = select(Game).where(Game.name == 'mygame')  # noqa
+    exec_ = await session.exec(stmt)  # noqa
+    if game := exec_.one_or_none():
+        # ic(game, game.genres, game.tags)
+
+        # Genre
+        stmt = select(Genre).where(Genre.id == 1)  # noqa
+        exec_ = await session.exec(stmt)  # noqa
+        genre = exec_.one_or_none()
+        # ic(genre, genre.game)
+
+        # Tags
+        tag = await session.get(Tag, 1)
+        await session.refresh(tag, attribute_names=['games'])
+        # ic(tag, tag.games)
+
+        # # Add/Remove tag to/from Game
+        # tag3 = await session.get(Tag, 3)
+        # game.tags.append(tag3)
+        # game.tags = list(filter(lambda x: x.id != 2, game.tags))
+        # session.add(game)
+        # await session.commit()
+        #
+        # # View Game again
+        # game = await session.get(Game, 1)
+        # ic(game, game.tags)
+
+        # # Delete tag
+        # ic(game.tags)
+        # await session.delete(tag)
+        # await session.commit()
+        # await session.refresh(game)
+        # ic(game.tags)
+
+        stmt = select(GameTags).where(GameTags.game_id == 1)  # noqa
+        exec_ = await session.exec(stmt)  # noqa
+        gt = exec_.all()
+        ic(gt)
+
+    return True
+
+
+@app.get('/hitme')
+async def hitme(session: Annotated[AsyncSession, Depends(get_session)]):
+    # # Create
+    # book1 = Book(title='The Color of Green', year=1901, isbn=45678657, pages=256, rating='Trans Tween')
+    # session.add(book1)
+    # # await session.commit()
+    # # await session.refresh(book1)
+    #
+    # author1 = Author(first_name='John', last_name='Doe', gender='M', published=2, nationality='USA', meta={
+    #     'shoe_size': '55',
+    #     'dogs': 2,
+    #     'cars': ['Mazda R8', 'Honda Civic', 'Kalesa']
+    # }, book_authors=[
+    #     book1
+    #     # Book(title='The Color of Green', year=1901, isbn=45678657, pages=256, rating='Trans Tween')
+    # ])   # noqa
+    # session.add(author1)
+    # await session.commit()
+    # await session.refresh(author1)
+
+    # Add another author to a book
+    stmt = select(Book).where(Book.title == 'The Color of Green')  # noqa
+    exec_ = await session.exec(stmt)  # noqa
+    if book := exec_.one_or_none():
+        stmt = select(Author).where(Author.first_name == 'John')  # noqa
+        exec_ = await session.exec(stmt)  # noqa
+        author = exec_.one_or_none()
+
+        await session.refresh(book, attribute_names=['authors'])
+        book.authors.append(
+            Author(first_name='Samantha', last_name='Santos', gender='F', published=12, nationality='Filipino', meta={})
+        )
+
+        session.add(book)
+        await session.commit()
+        ic(book.authors)
+        return
+    print(book)
+    ic('There is no book')
+
+
+    # if book is None:
+    #     print('Book does not exist')
+    #     return
+
+
+    #
+    # # Delete
+    # await session.delete(book)
     # await session.commit()
 
-    return True
-
-
-@app.post('/equip')
-async def equip_weapon(session: Annotated[AsyncSession, Depends(get_session)]):
-    # Get jake
-    # Equip jake
-
-    # Get character by their id
-    # jake = await session.get(Character, 5)
-    nic = await session.get(Character, 6)
-
-    # Get character by their name
-    # stmt = select(Character).where(Character.name == 'jake')    # noqa
-    # exec_ = await session.exec(stmt)
-    # jake = exec_.all()
-    # ic(jake)
-
-    # axe = Weapon(name='axe', type='melee', is_equiped=True, character_id=jake.id)
-    sword = Weapon(name='sword', type='melee', is_equiped=True, character_id=nic.id, character=nic)  # noqa
-    # session.add(axe)
-    session.add(sword)
-    await session.commit()
-
-    return True
-
-
-@app.delete('/jake')
-async def delete_jake(session: Annotated[AsyncSession, Depends(get_session)]):
-    jake = await session.get(Character, 3)
-    await session.delete(jake)
-    await session.commit()
-
-    return 'Jake is deleted. Yay!'
-
-
-@app.get('/drink/potion')
-async def potion(session: Annotated[AsyncSession, Depends(get_session)]):
-    jake = await session.get(Character, 5)
-    jake.health = 100
-    session.add(jake)
-    await session.commit()
-    return jake
-
-
-@app.get('/check-weapon')
-async def check_weapon(session: Annotated[AsyncSession, Depends(get_session)]):
-    char = await session.get(Character, 6)
-    # await session.refresh(char, attribute_names=['weapons'])
-    ic(char)
-    return char.weapons
+    return 'SUCCESS!'
