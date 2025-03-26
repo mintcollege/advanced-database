@@ -6,7 +6,9 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from pydantic import BaseModel
 from models.Pokemon import Pokemon
 from icecream import ic
+
 from models.Game import Game, Genre, Tag, GameTags
+from models.library import Book, Author
 
 
 # Setup the use of your database
@@ -130,10 +132,63 @@ async def foo(session: Annotated[AsyncSession, Depends(get_session)]):
         # await session.refresh(game)
         # ic(game.tags)
 
-        stmt = select(GameTags).where(GameTags.game_id == 1)    # noqa
-        exec_ = await session.exec(stmt)    # noqa
+        stmt = select(GameTags).where(GameTags.game_id == 1)  # noqa
+        exec_ = await session.exec(stmt)  # noqa
         gt = exec_.all()
         ic(gt)
 
-
     return True
+
+
+@app.get('/hitme')
+async def hitme(session: Annotated[AsyncSession, Depends(get_session)]):
+    # # Create
+    # book1 = Book(title='The Color of Green', year=1901, isbn=45678657, pages=256, rating='Trans Tween')
+    # session.add(book1)
+    # # await session.commit()
+    # # await session.refresh(book1)
+    #
+    # author1 = Author(first_name='John', last_name='Doe', gender='M', published=2, nationality='USA', meta={
+    #     'shoe_size': '55',
+    #     'dogs': 2,
+    #     'cars': ['Mazda R8', 'Honda Civic', 'Kalesa']
+    # }, book_authors=[
+    #     book1
+    #     # Book(title='The Color of Green', year=1901, isbn=45678657, pages=256, rating='Trans Tween')
+    # ])   # noqa
+    # session.add(author1)
+    # await session.commit()
+    # await session.refresh(author1)
+
+    # Add another author to a book
+    stmt = select(Book).where(Book.title == 'The Color of Green')  # noqa
+    exec_ = await session.exec(stmt)  # noqa
+    if book := exec_.one_or_none():
+        stmt = select(Author).where(Author.first_name == 'John')  # noqa
+        exec_ = await session.exec(stmt)  # noqa
+        author = exec_.one_or_none()
+
+        await session.refresh(book, attribute_names=['authors'])
+        book.authors.append(
+            Author(first_name='Samantha', last_name='Santos', gender='F', published=12, nationality='Filipino', meta={})
+        )
+
+        session.add(book)
+        await session.commit()
+        ic(book.authors)
+        return
+    print(book)
+    ic('There is no book')
+
+
+    # if book is None:
+    #     print('Book does not exist')
+    #     return
+
+
+    #
+    # # Delete
+    # await session.delete(book)
+    # await session.commit()
+
+    return 'SUCCESS!'
