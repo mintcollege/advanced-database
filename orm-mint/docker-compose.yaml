@@ -10,5 +10,12 @@ services:
       - aaadb:/var/lib/postgresql/data
     environment:
       - POSTGRES_PASSWORD=pass123
+      
+  jupyter:
+    image: quay.io/jupyter/scipy-notebook:python-3.12
+    container_name: jupyter
+    ports:
+    - "8888:8888"
+      
 volumes:
   aaadb:
