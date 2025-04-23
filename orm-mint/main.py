@@ -46,25 +46,37 @@ async def create(data: CreatePokemon, session: Annotated[AsyncSession, Depends(g
     """
     Create a new Pokemon
     """
-    ic(data)
-    pokemon = Pokemon(name=data.name, type=data.type, health=data.health, weakness=data.weakness)
-    ic(pokemon)
-    session.add(pokemon)
-    await session.commit()  # Saves pikachu to the database
-    await session.refresh(pokemon)  # Updates pikachu with the db id
-    ic(pokemon)
-    return pokemon
+
+    try:
+        ic(data)
+        pokemon = Pokemon(name=data.name, type=data.type, health=data.health, weakness=data.weakness)
+        ic(pokemon)
+        session.add(pokemon)
+        await session.commit()  # Saves pikachu to the database
+        await session.refresh(pokemon)  # Updates pikachu with the db id
+        ic(pokemon)
+        return pokemon
+    except Exception as e:
+        print('I did not get the data')
 
 
 @app.post('/edit/{id_}')
 async def edit_pokemon(id_: int, data: Annotated[dict, Body()],
                        session: Annotated[AsyncSession, Depends(get_session)]):
-    pokemon = await session.get(Pokemon, id_)
-    ic(type(pokemon))
-    pokemon.name = data['name']
-    session.add(pokemon)
-    await session.commit()
-    return True
+
+    try:
+        pokemon = await session.get(Pokemon, id_)
+        ic(type(pokemon))
+        pokemon.name = data['name']
+        session.add(pokemon)
+        await session.commit()
+        return True
+    except Exception as e:
+        # logger.debug(e)
+        logger.warning(e)
+        # logger.error(e)
+        # logger.critical(e)
+        return False
 
 
 @app.post('/populate')
@@ -78,19 +90,27 @@ async def foo(session: Annotated[AsyncSession, Depends(get_session)]):
     session.add(tag2)
     session.add(tag3)
     session.add(game)
-    await session.commit()
-    await session.refresh(tag1)
-    await session.refresh(tag2)
-    await session.refresh(tag3)
-    await session.refresh(game)
+
+    try:
+        await session.commit()
+        await session.refresh(tag1)
+        await session.refresh(tag2)
+        await session.refresh(tag3)
+        await session.refresh(game)
+    except Exception as e:
+        return None
 
     genre1 = Genre(name='rpg', game=game)
     genre2 = Genre(name='isometric', game=game)
     session.add(genre1)
     session.add(genre2)
-    await session.commit()
-    await session.refresh(genre1)
-    await session.refresh(genre2)
+
+    try:
+        await session.commit()
+        await session.refresh(genre1)
+        await session.refresh(genre2)
+    except Exception as e:
+        return None
 
     return True
 
@@ -103,41 +123,44 @@ async def foo(session: Annotated[AsyncSession, Depends(get_session)]):
     if game := exec_.one_or_none():
         # ic(game, game.genres, game.tags)
 
-        # Genre
-        stmt = select(Genre).where(Genre.id == 1)  # noqa
-        exec_ = await session.exec(stmt)  # noqa
-        genre = exec_.one_or_none()
-        # ic(genre, genre.game)
+        try:
+            # Genre
+            stmt = select(Genre).where(Genre.id == 1)  # noqa
+            exec_ = await session.exec(stmt)  # noqa
+            genre = exec_.one_or_none()
+            # ic(genre, genre.game)
 
-        # Tags
-        tag = await session.get(Tag, 1)
-        await session.refresh(tag, attribute_names=['games'])
-        # ic(tag, tag.games)
+            # Tags
+            tag = await session.get(Tag, 1)
+            await session.refresh(tag, attribute_names=['games'])
+            # ic(tag, tag.games)
 
-        # # Add/Remove tag to/from Game
-        # tag3 = await session.get(Tag, 3)
-        # game.tags.append(tag3)
-        # game.tags = list(filter(lambda x: x.id != 2, game.tags))
-        # session.add(game)
-        # await session.commit()
-        #
-        # # View Game again
-        # game = await session.get(Game, 1)
-        # ic(game, game.tags)
+            # # Add/Remove tag to/from Game
+            # tag3 = await session.get(Tag, 3)
+            # game.tags.append(tag3)
+            # game.tags = list(filter(lambda x: x.id != 2, game.tags))
+            # session.add(game)
+            # await session.commit()
+            #
+            # # View Game again
+            # game = await session.get(Game, 1)
+            # ic(game, game.tags)
 
-        # # Delete tag
-        # ic(game.tags)
-        # await session.delete(tag)
-        # await session.commit()
-        # await session.refresh(game)
-        # ic(game.tags)
+            # # Delete tag
+            # ic(game.tags)
+            # await session.delete(tag)
+            # await session.commit()
+            # await session.refresh(game)
+            # ic(game.tags)
 
-        stmt = select(GameTags).where(GameTags.game_id == 1)  # noqa
-        exec_ = await session.exec(stmt)  # noqa
-        gt = exec_.all()
-        ic(gt)
+            stmt = select(GameTags).where(GameTags.game_id == 1)  # noqa
+            exec_ = await session.exec(stmt)  # noqa
+            gt = exec_.all()
+            ic(gt)
+            return True
+        except Exception:
+            return False
 
-    return True
 
 
 @app.get('/hitme')
