@@ -13,6 +13,9 @@ asyncpg = "^0.30.0"
 icecream = "^2.1.4"
 fastapi = {extras = ["standard"], version = "^0.115.12"}
 alembic = "^1.15.1"
+pytest = "^8.3.5"
+pytest-sugar = "^1.0.0"
+pytest-asyncio = "^0.26.0"
 
 
 [build-system]
