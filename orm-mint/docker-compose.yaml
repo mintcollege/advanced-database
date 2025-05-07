@@ -10,6 +10,17 @@ services:
       - aaadb:/var/lib/postgresql/data
     environment:
       - POSTGRES_PASSWORD=pass123
+
+  redis:
+    image: redis/redis-stack:latest
+    container_name: devcache
+    restart: no
+    tty: true
+    ports:
+      - "6379:6379"
+      - "8010:8001"
+    volumes:
+      - devcache:/data
       
   jupyter:
     image: quay.io/jupyter/scipy-notebook:python-3.12
@@ -19,3 +30,4 @@ services:
       
 volumes:
   aaadb:
+  devcache:

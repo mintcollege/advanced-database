@@ -16,6 +16,7 @@ alembic = "^1.15.1"
 pytest = "^8.3.5"
 pytest-sugar = "^1.0.0"
 pytest-asyncio = "^0.26.0"
+redis = {extras = ["hiredis"], version = "^6.0.0"}
 
 
 [build-system]
